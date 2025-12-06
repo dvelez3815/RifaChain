@@ -1,0 +1,19 @@
+{
+  "name": "rifachain-contracts",
+  "version": "1.0.0",
+  "description": "Smart contracts for RifaChain",
+  "scripts": {
+    "test": "hardhat test",
+    "coverage": "hardhat coverage"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "ethers": "^6.15.0",
+    "hardhat": "^2.27.0"
+  },
+  "dependencies": {
+    "@chainlink/contracts": "^1.5.0",
+    "@openzeppelin/contracts": "^4.9.6",
+    "dotenv": "^16.6.1"
+  }
+}

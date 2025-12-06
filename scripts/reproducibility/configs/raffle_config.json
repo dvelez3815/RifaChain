@@ -1,0 +1,16 @@
+{
+  "title": "Rifa de Prueba Automation",
+  "description": "Testing automation service",
+  "startTime": "NOW",
+  "endTime": "NOW_PLUS_3_MIN",
+  "minParticipants": 1,
+  "maxParticipants": 100,
+  "isPublic": true,
+  "tokenType": 0,
+  "tokenAddress": "0x0000000000000000000000000000000000000000",
+  "ticketPrice": "100000000000000",
+  "payoutAddress": "signer",
+  "allowMultipleEntries": true,
+  "fundingAmount": "100000000000000",
+  "winnerPercentages": [100]
+}
