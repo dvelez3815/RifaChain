@@ -25,7 +25,10 @@ async function main() {
   console.log("Buying with account:", signer.address);
 
   // 3. Get Contract
-  const contractAddress = process.env.CONTRACT_ADDRESS || "0x1b0a16f62d07123dfC95Fc368Fc3DAF84f045E33";
+  // 3. Get Contract
+  let contractAddress;
+  const { getContractAddress } = require("../utils/networkConfig");
+  contractAddress = getContractAddress(hre.network.name) || process.env.CONTRACT_ADDRESS || "0x1b0a16f62d07123dfC95Fc368Fc3DAF84f045E33";
   const RifaChain = await hre.ethers.getContractFactory("RifaChain");
   const rifaChain = RifaChain.attach(contractAddress).connect(signer);
 

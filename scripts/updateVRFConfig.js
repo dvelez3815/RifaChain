@@ -10,23 +10,21 @@ async function main() {
   let config;
 
   // Configuration per network
+  const { getContractAddress } = require("./utils/networkConfig");
+  rifaChainAddress = getContractAddress(network.name);
+
+  // Configuration per network (for chainlink config)
   if (network.name === "sepolia") {
-    rifaChainAddress = process.env.ETHEREUM_SEPOLIA_CONTRACT_ADDRESS;
     config = chainlinkConfig.ETHEREUM_SEPOLIA;
   } else if (network.name === "polygonAmoy") {
-    rifaChainAddress = process.env.POLYGON_AMOY_CONTRACT_ADDRESS;
     config = chainlinkConfig.POLYGON_AMOY;
   } else if (network.name === "bscTestnet") {
-    rifaChainAddress = process.env.BSC_TESTNET_CONTRACT_ADDRESS;
     config = chainlinkConfig.BSC_TESTNET;
   } else if (network.name === "polygon") {
-    rifaChainAddress = process.env.POLYGON_MAINNET_CONTRACT_ADDRESS;
     config = chainlinkConfig.POLYGON_MAINNET;
   } else if (network.name === "bsc") {
-    rifaChainAddress = process.env.BSC_MAINNET_CONTRACT_ADDRESS;
     config = chainlinkConfig.BSC_MAINNET;
   } else if (network.name === "ethereum") {
-    rifaChainAddress = process.env.ETHEREUM_MAINNET_CONTRACT_ADDRESS;
     config = chainlinkConfig.ETHEREUM_MAINNET;
   } else {
     throw new Error(`Unsupported network for update script: ${network.name}`);
@@ -48,6 +46,8 @@ async function main() {
   const tx1 = await rifaChain.setKeyHash(config.keyHash);
   await tx1.wait();
   console.log("KeyHash updated successfully!");
+
+
 
   // Update SubscriptionId
   if (config.subscriptionId) {

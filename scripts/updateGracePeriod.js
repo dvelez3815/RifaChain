@@ -9,27 +9,9 @@ async function main() {
   let newGracePeriod;
 
   // Configuration per network
-  if (network.name === "sepolia") {
-    rifaChainAddress = process.env.ETHEREUM_SEPOLIA_CONTRACT_ADDRESS;
-    newGracePeriod = 300; // 5 minutes in seconds
-  } else if (network.name === "polygonAmoy") {
-    rifaChainAddress = process.env.POLYGON_AMOY_CONTRACT_ADDRESS;
-    newGracePeriod = 604800; // 7 days in seconds
-  } else if (network.name === "bscTestnet") {
-    rifaChainAddress = process.env.BSC_TESTNET_CONTRACT_ADDRESS;
-    newGracePeriod = 604800; // 7 days in seconds
-  } else if (network.name === "polygon") {
-    rifaChainAddress = process.env.POLYGON_MAINNET_CONTRACT_ADDRESS;
-    newGracePeriod = 604800;
-  } else if (network.name === "bsc") {
-    rifaChainAddress = process.env.BSC_MAINNET_CONTRACT_ADDRESS;
-    newGracePeriod = 604800;
-  } else if (network.name === "ethereum") {
-    rifaChainAddress = process.env.ETHEREUM_MAINNET_CONTRACT_ADDRESS;
-    newGracePeriod = 604800;
-  } else {
-    throw new Error(`Unsupported network for grace period update script: ${network.name}`);
-  }
+  const { getContractAddress, getGracePeriod } = require("./utils/networkConfig");
+  rifaChainAddress = getContractAddress(network.name);
+  newGracePeriod = getGracePeriod(network.name);
 
   if (!rifaChainAddress) {
     throw new Error(`Contract address not found for network: ${network.name}. Check your .env file.`);
