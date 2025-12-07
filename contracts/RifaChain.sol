@@ -160,10 +160,14 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
         uint256 startTime,
         uint256 endTime,
         uint256 minParticipants,
+        uint256 maxParticipants,
         bool isPublic,
         bool allowMultipleEntries,
         uint256 fundingAmount,
-        uint256[] winnerPercentages
+        uint256[] winnerPercentages,
+        uint256 version,
+        string title,
+        string description
     );
 
     /**
@@ -516,10 +520,14 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
             _startTime,
             _endTime,
             _minParticipants,
+            _maxParticipants,
             _isPublic,
             _allowMultipleEntries,
             _fundingAmount,
-            _winnerPercentages
+            _winnerPercentages,
+            VERSION,
+            _title,
+            _description
         );
     }
 
