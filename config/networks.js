@@ -3,32 +3,32 @@ require("dotenv").config({ path: "../../.env" });
 module.exports = {
   networks: {
     ethereum: {
-      url: process.env.ETHEREUM_MAINNET_RPC_URL || "https://mainnet.infura.io/v3/YOUR-PROJECT-ID",
+      url: process.env.PUBLIC_ETHEREUM_MAINNET_RPC_URL || "https://mainnet.infura.io/v3/YOUR-PROJECT-ID",
       chainId: 1,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
     sepolia: {
-      url: process.env.ETHEREUM_SEPOLIA_RPC_URL || "https://sepolia.infura.io/v3/YOUR-PROJECT-ID",
+      url: process.env.PUBLIC_ETHEREUM_SEPOLIA_RPC_URL || "https://sepolia.infura.io/v3/YOUR-PROJECT-ID",
       chainId: 11155111,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
     polygon: {
-      url: process.env.POLYGON_MAINNET_RPC_URL || "https://polygon-rpc.com",
+      url: process.env.PUBLIC_POLYGON_MAINNET_RPC_URL || "https://polygon-rpc.com",
       chainId: 137,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
     polygonAmoy: {
-      url: process.env.POLYGON_AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
+      url: process.env.PUBLIC_POLYGON_AMOY_RPC_URL || "https://rpc-amoy.polygon.technology",
       chainId: 80002,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
     bsc: {
-      url: process.env.BSC_MAINNET_RPC_URL || "https://bsc-dataseed.binance.org/",
+      url: process.env.PUBLIC_BSC_MAINNET_RPC_URL || "https://bsc-dataseed.binance.org/",
       chainId: 56,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },
     bscTestnet: {
-      url: process.env.BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s2.bnbchain.org:8545/",
+      url: process.env.PUBLIC_BSC_TESTNET_RPC_URL || "https://data-seed-prebsc-1-s2.bnbchain.org:8545/",
       chainId: 97,
       accounts: process.env.PRIVATE_KEY ? [process.env.PRIVATE_KEY] : [],
     },

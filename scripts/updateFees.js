@@ -11,36 +11,22 @@ async function main() {
 
   // Configuration per network
   // Configuration per network
-  if (network.name === "sepolia") {
-    rifaChainAddress = process.env.ETHEREUM_SEPOLIA_CONTRACT_ADDRESS;
-    newBaseFee = ethers.parseEther("0.0015"); // ~$5 USD
-    newAdditionalFee = ethers.parseEther("0.00075");
-  } else if (network.name === "polygonAmoy") {
-    rifaChainAddress = process.env.POLYGON_AMOY_CONTRACT_ADDRESS;
-    newBaseFee = ethers.parseEther("0.01"); // ~$6 USD (approx 15 MATIC at $0.40)
-    newAdditionalFee = ethers.parseEther("0.005");
-  } else if (network.name === "bscTestnet") {
-    rifaChainAddress = process.env.BSC_TESTNET_CONTRACT_ADDRESS;
-    newBaseFee = ethers.parseEther("0.01"); // ~$6 USD
-    newAdditionalFee = ethers.parseEther("0.005");
-  } else if (network.name === "polygon") {
-    rifaChainAddress = process.env.POLYGON_MAINNET_CONTRACT_ADDRESS;
-    newBaseFee = ethers.parseEther("15"); // ~$6 USD
-    newAdditionalFee = ethers.parseEther("5");
-  } else if (network.name === "bsc") {
-    rifaChainAddress = process.env.BSC_MAINNET_CONTRACT_ADDRESS;
-    newBaseFee = ethers.parseEther("0.01");
-    newAdditionalFee = ethers.parseEther("0.005");
-  } else if (network.name === "ethereum") {
-    rifaChainAddress = process.env.ETHEREUM_MAINNET_CONTRACT_ADDRESS;
+  const { getContractAddress } = require("./utils/networkConfig");
+  rifaChainAddress = getContractAddress(network.name);
+
+  if (network.name === "sepolia" || network.name === "ethereum") {
     newBaseFee = ethers.parseEther("0.0015");
     newAdditionalFee = ethers.parseEther("0.00075");
+  } else if (network.name === "polygonAmoy" || network.name === "bscTestnet" || network.name === "bsc") {
+    newBaseFee = ethers.parseEther("0.01");
+    newAdditionalFee = ethers.parseEther("0.005");
+  } else if (network.name === "polygon") {
+    newBaseFee = ethers.parseEther("15");
+    newAdditionalFee = ethers.parseEther("5");
   } else {
-    throw new Error(`Unsupported network for fee update script: ${network.name}`);
-  }
-
-  if (!rifaChainAddress) {
-    throw new Error(`Contract address not found for network: ${network.name}. Check your .env file.`);
+     // Fallback or specific error if needed, though getContractAddress handles unsupported networks generally, 
+     // we still need fee config.
+     throw new Error(`Fee configuration not found for network: ${network.name}`);
   }
 
   console.log(`Target Contract: ${rifaChainAddress}`);

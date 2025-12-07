@@ -3,17 +3,18 @@ const chainlinkConfig = require("../config/chainlink_vrf");
 
 async function main() {
   const [deployer] = await ethers.getSigners();
-  console.log("Updating VRF Coordinator on network:", network.name);
+  console.log("Updating VRF Subscription ID on network:", network.name);
   console.log("Signer:", deployer.address);
 
   let rifaChainAddress;
   let config;
 
-  // Configuration per network
+    // Configuration per network
+    console.log("network.name :", network.name);
+    
   const { getContractAddress } = require("./utils/networkConfig");
   rifaChainAddress = getContractAddress(network.name);
 
-  // The config variable still needs to be set based on the network
   if (network.name === "sepolia") {
     config = chainlinkConfig.ETHEREUM_SEPOLIA;
   } else if (network.name === "polygonAmoy") {
@@ -35,28 +36,27 @@ async function main() {
   }
 
   console.log(`Target Contract: ${rifaChainAddress}`);
-  console.log(`Target Coordinator: ${config.vrfCoordinator}`);
+  console.log(`Target Subscription ID: ${config.subscriptionId}`);
 
   const RifaChain = await ethers.getContractFactory("RifaChain");
   const rifaChain = RifaChain.attach(rifaChainAddress);
 
-  // Update Coordinator
-  console.log("config.vrfCoordinator :", config.vrfCoordinator);
-  if (config.vrfCoordinator) {
-      console.log("Updating VRF Coordinator... :", config.vrfCoordinator);
+  // Update Subscription ID
+  if (config.subscriptionId) {
+      console.log("Updating VRF Subscription ID.. :", config.subscriptionId);
       try {
-        const tx0 = await rifaChain.setCoordinator(config.vrfCoordinator);
+        const tx0 = await rifaChain.setSubscriptionId(config.subscriptionId);
         await tx0.wait();
-        console.log("VRF Coordinator updated successfully!");
+        console.log("VRF Subscription ID updated successfully!");
       } catch (error) {
-        console.error("Failed to update VRF Coordinator. The contract might not expose 'setCoordinator' or it might be named differently.");
+        console.error("Failed to update VRF Subscription ID.");
         console.error(error.message);
       }
   } else {
-      console.log("No VRF Coordinator configured for this network.");
+      console.log("No VRF Subscription ID configured for this network.");
   }
   
-  console.log("VRF Coordinator update complete.");
+  console.log("VRF Subscription ID update complete.");
 }
 
 main().catch((error) => {

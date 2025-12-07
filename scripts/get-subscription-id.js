@@ -12,15 +12,10 @@ async function main() {
   let rifaChainAddress;
 
   // Configuration per network
-  if (network.name === "sepolia") {
-    vrfCoordinatorAddress = "0x9DdfaCa8183c41ad55329BdeeD9F6A8d53168B1B";
-    rifaChainAddress = process.env.ETHEREUM_SEPOLIA_CONTRACT_ADDRESS;
-  } else if (network.name === "polygonAmoy") {
-    vrfCoordinatorAddress = "0x8103B0A8A00be2DDC778e6e7eaa21791Cd364625";
-    rifaChainAddress = process.env.POLYGON_AMOY_CONTRACT_ADDRESS;
-  } else if (network.name === "bscTestnet") {
-    vrfCoordinatorAddress = "0xDA3b641D438362C440Ac5458c57e00a712b66700"; // VRF v2.5
-    rifaChainAddress = process.env.BSC_TESTNET_CONTRACT_ADDRESS;
+  const config = getNetworkConfig(network.name);
+  if (config) {
+    vrfCoordinatorAddress = config.vrfCoordinatorAddress;
+    rifaChainAddress = config.rifaChainAddress;
   } else {
     console.warn(`⚠️  Network '${network.name}' not explicitly configured. Using placeholders or failing.`);
     // You can add more networks here

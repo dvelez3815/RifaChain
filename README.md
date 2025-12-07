@@ -125,3 +125,11 @@ The `RifaChain` smart contract is **secure, scalable, and ready for deployment**
 
 > [!IMPORTANT]
 > While this AI audit covers major vulnerabilities and logic flaws, for high-value deployments (>$100k TVL), a professional audit by a firm like Certik or OpenZeppelin is always recommended.
+
+## Smart Contract Addresses
+
+| Network | Contract Address |
+| :--- | :--- |
+| **Ethereum Mainnet** | [0xE434f0D464d442E3b5015F5F0be00E0426184A64](https://etherscan.io/address/0xE434f0D464d442E3b5015F5F0be00E0426184A64#code) |
+| **BSC Mainnet** | [0xE434f0D464d442E3b5015F5F0be00E0426184A64](https://bscscan.com/address/0xE434f0D464d442E3b5015F5F0be00E0426184A64#code) |
+| **Polygon Mainnet** | [0xE434f0D464d442E3b5015F5F0be00E0426184A64](https://polygonscan.com/address/0xE434f0D464d442E3b5015F5F0be00E0426184A64#code) |
