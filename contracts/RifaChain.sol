@@ -134,6 +134,9 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @notice Address that receives platform fees.
     address public feeRecipient;
 
+    /// @notice Maximum number of winners allowed per raffle.
+    uint256 public maxWinners = 5;
+
     // --- Events ---
 
     /**
@@ -255,6 +258,7 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     event GracePeriodUpdated(uint256 newPeriod);
     event KeyHashUpdated(bytes32 keyHash);
     event SubscriptionIdUpdated(uint256 subscriptionId);
+    event MaxWinnersUpdated(uint256 newMax);
     
     /**
      * @notice Emitted when a creator collects their ticket revenue.
@@ -410,6 +414,16 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     /**
+     * @notice Updates the maximum number of winners allowed.
+     * @param _newMax The new maximum number of winners.
+     */
+    function setMaxWinners(uint256 _newMax) external onlyOwner {
+        require(_newMax > 0, "Must be at least 1");
+        maxWinners = _newMax;
+        emit MaxWinnersUpdated(_newMax);
+    }
+
+    /**
      * @notice Calculates the creation fee based on winners and duration.
      * @param _numWinners The number of winners configured for the raffle.
      * @param _duration The duration of the raffle in seconds.
@@ -479,7 +493,7 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
             totalPercentage += _winnerPercentages[i];
         }
         if (totalPercentage != 100) revert InvalidWinnerPercentages();
-        if (_winnerPercentages.length > 5) revert InvalidWinnerPercentages();
+        if (_winnerPercentages.length > maxWinners) revert InvalidWinnerPercentages();
         
         if (_minParticipants < _winnerPercentages.length) revert InvalidParticipantLimits();
         if (_minParticipants < 1) revert InvalidParticipantLimits();
