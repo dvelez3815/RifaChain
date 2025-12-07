@@ -29,11 +29,14 @@ describe("RifaChain Multiple Winners", function () {
       const { rifaChain, creator } = await loadFixture(deployRifaChainFixture);
       const now = await time.latest();
 
+      const duration = 3500;
+      const fee = await rifaChain.getCreationFee(2, duration); // 2 winners
       await expect(
         rifaChain.connect(creator).createRaffle(
           "Invalid %", "Desc", now + 100, now + 3600, 2, 100, true, 0, ethers.ZeroAddress, 0, creator.address, false,
           0, // fundingAmount
-          [50, 40] // Sums to 90
+          [50, 40], // Sums to 90
+          { value: fee }
         )
       ).to.be.revertedWithCustomError(rifaChain, "InvalidWinnerPercentages");
     });
@@ -42,11 +45,14 @@ describe("RifaChain Multiple Winners", function () {
       const { rifaChain, creator } = await loadFixture(deployRifaChainFixture);
       const now = await time.latest();
 
+      const duration = 3500;
+      const fee = await rifaChain.getCreationFee(2, duration); // 2 winners
       await expect(
         rifaChain.connect(creator).createRaffle(
           "Invalid Participants", "Desc", now + 100, now + 3600, 1, 100, true, 0, ethers.ZeroAddress, 0, creator.address, false,
           0, // fundingAmount
-          [50, 50] // 2 winners, but minParticipants is 1
+          [50, 50], // 2 winners, but minParticipants is 1
+          { value: fee }
         )
       ).to.be.revertedWithCustomError(rifaChain, "InvalidParticipantLimits");
     });
@@ -60,10 +66,13 @@ describe("RifaChain Multiple Winners", function () {
       const winnerPercentages = [50, 30, 20]; // 1st: 50%, 2nd: 30%, 3rd: 20%
 
       // Create Raffle
+      const duration = 3500;
+      const fee = await rifaChain.getCreationFee(3, duration); // 3 winners
       const tx = await rifaChain.connect(creator).createRaffle(
         "Multi Winner", "Desc", now + 100, now + 3600, 3, 100, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, false,
-        0, // fundingAmount
-        winnerPercentages
+        ethers.parseEther("5"), // fundingAmount = 5 ETH
+        winnerPercentages,
+        { value: fee + ethers.parseEther("5") }
       );
       const receipt = await tx.wait();
       const event = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated');
@@ -129,10 +138,13 @@ describe("RifaChain Multiple Winners", function () {
         const winnerPercentages = [70, 30];
   
         // Create Raffle
+        const duration = 3500;
+        const fee = await rifaChain.getCreationFee(2, duration); // 2 winners
         const tx = await rifaChain.connect(creator).createRaffle(
           "Rank Check", "Desc", now + 100, now + 3600, 2, 100, true, 0, ethers.ZeroAddress, 0, creator.address, false,
           0, // fundingAmount
-          winnerPercentages
+          winnerPercentages,
+          { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -155,6 +167,50 @@ describe("RifaChain Multiple Winners", function () {
         const winners = await rifaChain.getRaffleWinners(raffleId);
         expect(winners.length).to.equal(2);
         expect(winners[0]).to.not.equal(winners[1]); // 1st and 2nd must be different
+    });
+    it("Should handle winner collision correctly (retry logic)", async function () {
+        const { rifaChain, mockVRFCoordinator, creator, user1, user2 } = await loadFixture(deployRifaChainFixture);
+        const now = await time.latest();
+        const winnerPercentages = [50, 50];
+  
+        // Create Raffle with 2 winners
+        const duration = 3500;
+        const fee = await rifaChain.getCreationFee(2, duration);
+        const tx = await rifaChain.connect(creator).createRaffle(
+          "Collision Test", "Desc", now + 100, now + 3600, 2, 100, true, 0, ethers.ZeroAddress, 0, creator.address, false,
+          0, // fundingAmount
+          winnerPercentages,
+          { value: fee }
+        );
+        const receipt = await tx.wait();
+        const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
+  
+        await time.increaseTo(now + 101);
+  
+        // 2 Users join
+        await rifaChain.connect(user1).joinRaffle(raffleId, 1, "0x");
+        await rifaChain.connect(user2).joinRaffle(raffleId, 1, "0x");
+  
+        await time.increaseTo(now + 3601);
+  
+        const reqTx = await rifaChain.connect(creator).requestRandomWinner(raffleId);
+        const reqReceipt = await reqTx.wait();
+        const requestId = reqReceipt.logs.find(log => log.fragment && log.fragment.name === 'RandomnessRequested').args[1];
+  
+        // Force collision: 
+        // User1 is index 0, User2 is index 1.
+        // We provide random words that both modulo to 0 (or 1).
+        // 10 % 2 = 0
+        // 100 % 2 = 0
+        await mockVRFCoordinator.fulfillRandomWords(await rifaChain.getAddress(), requestId, [10n, 100n]);
+  
+        const winners = await rifaChain.getRaffleWinners(raffleId);
+        expect(winners.length).to.equal(2);
+        
+        // Must be unique
+        expect(winners[0]).to.not.equal(winners[1]);
+        expect(winners).to.include(user1.address);
+        expect(winners).to.include(user2.address);
     });
   });
 });

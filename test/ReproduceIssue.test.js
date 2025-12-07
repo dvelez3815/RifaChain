@@ -33,10 +33,13 @@ describe("Reproduce User Issue", function () {
 
     // Create Raffle
     // Min participants = 5
+    const duration = 3500;
+    const fee = await rifaChain.getCreationFee(5, duration); // 5 winners
     const tx = await rifaChain.connect(creator).createRaffle(
       "User Issue Raffle", "Desc", now + 100, now + 3600, 5, 100, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true,
       0, // fundingAmount
-      winnerPercentages
+      winnerPercentages,
+      { value: fee }
     );
     const receipt = await tx.wait();
     const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];

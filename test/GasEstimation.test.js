@@ -29,14 +29,15 @@ describe("Gas Estimation: 10 Winners", function () {
     const now = await time.latest();
     const ticketPrice = ethers.parseEther("0.01");
     
-    // 10 Winners, each gets 10%
-    const winnerPercentages = Array(10).fill(10); 
+    // 5 Winners, each gets 20%
+    const winnerPercentages = Array(5).fill(20); 
 
     // Create Raffle
     const tx = await rifaChain.connect(creator).createRaffle(
-      "Gas Test 10 Winners", "Desc", now + 100, now + 3600, 20, 100, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, false,
+      "Gas Test 5 Winners", "Desc", now + 100, now + 3600, 20, 100, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, false,
       0, // fundingAmount
-      winnerPercentages
+      winnerPercentages,
+      { value: await rifaChain.getCreationFee(5, 3500) }
     );
     const receipt = await tx.wait();
     const event = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated');
@@ -61,17 +62,17 @@ describe("Gas Estimation: 10 Winners", function () {
     const requestId = reqEvent.args[1];
 
     // Fulfill with random words
-    // We need 10 random words
-    const randomWords = Array(10).fill(0).map((_, i) => BigInt(123456 + i));
+    // We need 5 random words
+    const randomWords = Array(5).fill(0).map((_, i) => BigInt(123456 + i));
 
     const fulfillTx = await mockVRFCoordinator.fulfillRandomWords(await rifaChain.getAddress(), requestId, randomWords);
     const fulfillReceipt = await fulfillTx.wait();
 
-    console.log(`\n\n[GAS REPORT] 10 Winners Selection`);
+    console.log(`\n\n[GAS REPORT] 5 Winners Selection`);
     console.log(`Gas Used: ${fulfillReceipt.gasUsed.toString()}`);
     console.log(`----------------------------------------\n`);
 
     const winners = await rifaChain.getRaffleWinners(raffleId);
-    expect(winners.length).to.equal(10);
+    expect(winners.length).to.equal(5);
   });
 });

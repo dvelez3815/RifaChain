@@ -40,8 +40,11 @@ describe("RifaChain Load & Gas Tests", function () {
     console.log("\n--- Gas Report: High Concurrency Raffle ---");
 
     // 1. Create Raffle
+    const duration = 3500;
+    const fee = await rifaChain.getCreationFee(1, duration);
     const createTx = await rifaChain.connect(creator).createRaffle(
-      "Load Test Raffle", "Desc", startTime, endTime, 1, 100, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, 0, [100]
+      "Load Test Raffle", "Desc", startTime, endTime, 1, 100, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, 0, [100],
+      { value: fee }
     );
     const createReceipt = await createTx.wait();
     console.log(`Gas used for createRaffle: ${createReceipt.gasUsed.toString()}`);

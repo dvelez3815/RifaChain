@@ -1,0 +1,953 @@
+
+
+  RifaChain Automation
+    1) Should correctly track active raffles and perform upkeep
+    2) Should not perform upkeep if conditions not met
+
+  RifaChain Cancel Raffle
+    Cancellation
+      3) Should allow creator to cancel raffle if conditions met
+      4) Should refund funding amount to creator on cancellation
+      5) Should revert if raffle not ended
+      6) Should revert if min participants reached
+      7) Should revert if already cancelled
+      8) Should remove from activeRaffles upon cancellation
+      9) Should allow PARTICIPANT to cancel IMMEDIATELY if raffle failed (min participants not met)
+      10) Should allow PARTICIPANT to cancel after GRACE PERIOD if raffle succeeded (min participants met)
+    Refunds
+      11) Should allow participants to withdraw refund (Native)
+      12) Should allow participants to withdraw refund (ERC20)
+      13) Should revert refund if raffle not cancelled
+      14) Should revert refund if user has no tickets
+      15) Should revert double refund
+
+  RifaChain Creator Earnings (Fixed Prize Model)
+    16) Should separate Prize Pool and Ticket Revenue correctly
+    17) Should allow creator to withdraw earnings after winner selection
+    18) Should revert if trying to collect earnings twice
+    19) Should revert if non-creator tries to collect
+
+  RifaChain Fee Structure
+    Creation Fee
+      ✔ Should return correct fee from getCreationFee
+      ✔ Should revert if creation fee is not paid (Native)
+      ✔ Should revert if insufficient creation fee is paid for multiple winners
+      ✔ Should transfer correct creation fee to fee recipient (Multiple Winners)
+      ✔ Should require creation fee + funding amount for funded native raffles
+      ✔ Should require duration fee for long raffles
+    Platform Fee (Pot Commission)
+      20) Should deduct platform fee from total pot and transfer to fee recipient
+      21) Should handle platform fee for ERC20 raffles
+
+  RifaChain Free Raffles
+    22) Should allow creating a free raffle (price 0)
+    23) Should allow joining a free raffle with 0 payment
+    24) Should revert if sending value to a free raffle
+    25) Should enforce single entry for free raffles (even if allowMultipleEntries is true)
+
+  Gas Estimation: 10 Winners
+    26) Should estimate gas for selecting 10 winners
+
+  Massive Scale Gas Simulation
+Gas - Create Raffle (5 winners): 508058
+Gas - Join Raffle (Average): 88111
+Gas - Cancel Raffle: 68124
+Gas - Request Winner: 126505
+Gas - Fulfill Random Words (Pick 5 Winners): 414486
+Gas - Claim Prize (Native): 36236
+    ✔ Should measure gas for all key operations with 5 winners
+
+  RifaChain Private Raffles (Digital Signatures)
+    27) Should allow joining with a valid signature
+    28) Should revert with InvalidSignature if signature is from wrong signer
+    29) Should revert with InvalidSignature if signature is for wrong participant
+    30) Should revert with InvalidSignature if signature is for wrong raffle
+
+  Reproduce User Issue
+    31) Should demonstrate deterministic winner selection when tickets == winners
+
+  RifaChain Date Validation
+    ✔ Should revert if start time is in the past
+    ✔ Should revert if end time is before start time
+    32) Should revert if duration is > 14 days
+    33) Should create raffle with valid dates
+
+  RifaChain Multiple Winners
+    Validation
+      ✔ Should revert if winner percentages do not sum to 100
+      ✔ Should revert if min participants is less than number of winners
+    Winner Selection and Distribution
+      34) Should select multiple unique winners and distribute prizes correctly
+      35) Should ensure 2nd place winner is not 1st place winner
+
+  RifaChain Validation
+    Create Raffle Validation
+      ✔ Should revert if minParticipants is 0
+      ✔ Should revert if minParticipants < number of winners
+      ✔ Should revert if winner percentages do not sum to 100
+      ✔ Should revert if any winner percentage is 0
+      ✔ Should revert if minParticipants > maxParticipants
+
+  RifaChain Load & Gas Tests
+
+--- Gas Report: High Concurrency Raffle ---
+    36) Should handle 50 concurrent participants and report gas usage
+
+  RifaChain
+    Deployment
+      ✔ Should set the right owner
+      ✔ Should start with 0 raffles
+    Raffle Creation
+      37) Should create a public raffle with native token correctly
+      38) Should create a private raffle with ERC20 token correctly
+      ✔ Should revert if startTime >= endTime
+      ✔ Should revert if payoutAddress is zero address
+      ✔ Should revert if minParticipants > maxParticipants
+      39) Should allow maxParticipants = 0 with minParticipants set
+    Participation
+      40) Should allow joining a native token raffle with correct payment
+      41) Should revert joining native raffle with incorrect payment
+      42) Should allow joining ERC20 raffle with approval
+      43) Should revert ERC20 join if ETH is sent
+      44) Should allow joining a free raffle
+      45) Should revert free raffle join if ETH is sent
+      46) Should revert if raffle is not active (before start)
+      47) Should revert if raffle is ended
+      48) Should revert if winners already selected (early draw)
+      49) Should revert if raffle is full
+      50) Should allow multiple joins from same user
+      Multiple Entries Logic
+        51) Should revert if user joins twice when multiple entries disabled
+        52) Should revert if user buys > 1 ticket when multiple entries disabled
+    Winner Selection
+      53) Should allow creator to request random winner and fulfill it
+      54) Should allow early draw if minParticipants reached
+      55) Should revert if unauthorized user tries to request winner
+      56) Should revert if raffle not ended
+      57) Should ignore duplicate fulfillment
+      58) Should ignore fulfillment with invalid request ID
+      59) Should revert if winners already selected
+      60) Should revert if no participants
+    View Functions
+      61) Should return paginated participants correctly
+      62) Should return correct user winnings
+      63) Should select winner and distribute ERC20 prizes correctly
+    Admin Functions
+      ✔ Should allow owner to set callback gas limit
+      ✔ Should revert if non-owner tries to set gas limit
+    Funding & Claims
+      64) Should create a raffle with initial funding (Native)
+      65) Should create a raffle with initial funding (ERC20)
+      ✔ Should revert if funding amount is incorrect (Native)
+      66) Should allow winner to claim prize (Native)
+      ✔ Should revert if no pending winnings
+
+  RifaChain Stress Test
+Debug: StartTime 1765108709
+Debug: CurrentTime 1765108710
+Debug: EndTime 1765112309
+Average Gas per Join (1 ticket): 84269
+Gas used for requestRandomWinner: 126517
+Gas used for fulfillRandomWords (3 winners, 50 participants): 396557
+    ✔ Should handle 100 participants and measure gas (43ms)
+    67) Should measure automation gas for multiple active raffles
+
+  Winners Limit Verification
+    ✔ Should revert when creating a raffle with 6 winners
+    68) Should allow creating a raffle with 5 winners
+
+
+  27 passing (1s)
+  68 failing
+
+  1) RifaChain Automation
+       Should correctly track active raffles and perform upkeep:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/Automation.test.js:35:17)
+  
+
+  2) RifaChain Automation
+       Should not perform upkeep if conditions not met:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/Automation.test.js:117:5)
+  
+
+  3) RifaChain Cancel Raffle
+       Cancellation
+         Should allow creator to cancel raffle if conditions met:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:41:20)
+  
+
+  4) RifaChain Cancel Raffle
+       Cancellation
+         Should refund funding amount to creator on cancellation:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:65:20)
+  
+
+  5) RifaChain Cancel Raffle
+       Cancellation
+         Should revert if raffle not ended:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:90:20)
+  
+
+  6) RifaChain Cancel Raffle
+       Cancellation
+         Should revert if min participants reached:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:106:20)
+  
+
+  7) RifaChain Cancel Raffle
+       Cancellation
+         Should revert if already cancelled:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:125:20)
+  
+
+  8) RifaChain Cancel Raffle
+       Cancellation
+         Should remove from activeRaffles upon cancellation:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:142:20)
+  
+
+  9) RifaChain Cancel Raffle
+       Cancellation
+         Should allow PARTICIPANT to cancel IMMEDIATELY if raffle failed (min participants not met):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:163:20)
+  
+
+  10) RifaChain Cancel Raffle
+       Cancellation
+         Should allow PARTICIPANT to cancel after GRACE PERIOD if raffle succeeded (min participants met):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:203:20)
+  
+
+  11) RifaChain Cancel Raffle
+       Refunds
+         Should allow participants to withdraw refund (Native):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:250:20)
+  
+
+  12) RifaChain Cancel Raffle
+       Refunds
+         Should allow participants to withdraw refund (ERC20):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:282:20)
+  
+
+  13) RifaChain Cancel Raffle
+       Refunds
+         Should revert refund if raffle not cancelled:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:309:20)
+  
+
+  14) RifaChain Cancel Raffle
+       Refunds
+         Should revert refund if user has no tickets:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:327:20)
+  
+
+  15) RifaChain Cancel Raffle
+       Refunds
+         Should revert double refund:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/CancelRaffle.test.js:346:20)
+  
+
+  16) RifaChain Creator Earnings (Fixed Prize Model)
+       Should separate Prize Pool and Ticket Revenue correctly:
+     TypeError: rifaChain.activeRaffles is not a function
+      at Context.<anonymous> (test/CreatorEarnings.test.js:64:39)
+
+  17) RifaChain Creator Earnings (Fixed Prize Model)
+       Should allow creator to withdraw earnings after winner selection:
+     TypeError: rifaChain.activeRaffles is not a function
+      at Context.<anonymous> (test/CreatorEarnings.test.js:105:39)
+
+  18) RifaChain Creator Earnings (Fixed Prize Model)
+       Should revert if trying to collect earnings twice:
+     TypeError: rifaChain.activeRaffles is not a function
+      at Context.<anonymous> (test/CreatorEarnings.test.js:154:39)
+
+  19) RifaChain Creator Earnings (Fixed Prize Model)
+       Should revert if non-creator tries to collect:
+     TypeError: rifaChain.activeRaffles is not a function
+      at Context.<anonymous> (test/CreatorEarnings.test.js:173:39)
+
+  20) RifaChain Fee Structure
+       Platform Fee (Pot Commission)
+         Should deduct platform fee from total pot and transfer to fee recipient:
+
+      AssertionError: expected 0 to equal 920000000000000000.
+      + expected - actual
+
+      -0
+      +920000000000000000
+      
+      at Context.<anonymous> (test/FeeStructure.test.js:208:28)
+
+  21) RifaChain Fee Structure
+       Platform Fee (Pot Commission)
+         Should handle platform fee for ERC20 raffles:
+
+      AssertionError: expected 0 to equal 92000000000000000000.
+      + expected - actual
+
+      -0
+      +92000000000000000000
+      
+      at Context.<anonymous> (test/FeeStructure.test.js:254:28)
+
+  22) RifaChain Free Raffles
+       Should allow creating a free raffle (price 0):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/FreeRaffle.test.js:29:5)
+  
+
+  23) RifaChain Free Raffles
+       Should allow joining a free raffle with 0 payment:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/FreeRaffle.test.js:63:5)
+  
+
+  24) RifaChain Free Raffles
+       Should revert if sending value to a free raffle:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/FreeRaffle.test.js:82:5)
+  
+
+  25) RifaChain Free Raffles
+       Should enforce single entry for free raffles (even if allowMultipleEntries is true):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/FreeRaffle.test.js:105:5)
+  
+
+  26) Gas Estimation: 10 Winners
+       Should estimate gas for selecting 10 winners:
+     Error: VM Exception while processing transaction: reverted with custom error 'InvalidWinnerPercentages()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:478)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/GasEstimation.test.js:36:16)
+  
+
+  27) RifaChain Private Raffles (Digital Signatures)
+       Should allow joining with a valid signature:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createPrivateRaffle (test/PrivateRaffle.test.js:26:5)
+    at Context.<anonymous> (test/PrivateRaffle.test.js:41:22)
+  
+
+  28) RifaChain Private Raffles (Digital Signatures)
+       Should revert with InvalidSignature if signature is from wrong signer:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createPrivateRaffle (test/PrivateRaffle.test.js:26:5)
+    at Context.<anonymous> (test/PrivateRaffle.test.js:56:22)
+  
+
+  29) RifaChain Private Raffles (Digital Signatures)
+       Should revert with InvalidSignature if signature is for wrong participant:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createPrivateRaffle (test/PrivateRaffle.test.js:26:5)
+    at Context.<anonymous> (test/PrivateRaffle.test.js:72:22)
+  
+
+  30) RifaChain Private Raffles (Digital Signatures)
+       Should revert with InvalidSignature if signature is for wrong raffle:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createPrivateRaffle (test/PrivateRaffle.test.js:26:5)
+    at Context.<anonymous> (test/PrivateRaffle.test.js:89:22)
+  
+
+  31) Reproduce User Issue
+       Should demonstrate deterministic winner selection when tickets == winners:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/ReproduceIssue.test.js:36:16)
+  
+
+  32) RifaChain Date Validation
+       Should revert if duration is > 14 days:
+     AssertionError: Expected transaction to be reverted with custom error 'InvalidTimeRange', but it reverted with custom error 'IncorrectPayment'
+      at Context.<anonymous> (test/RifaChain.DateValidation.test.js:83:5)
+
+  33) RifaChain Date Validation
+       Should create raffle with valid dates:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at waitForPendingTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-chai-matchers@2.1.0_@nomicfoundation+hardhat-ethers@3.1.2_ethe_42a9a4b3ea6925de48090c07faab8c42/node_modules/@nomicfoundation/hardhat-chai-matchers/src/internal/emit.ts:28:17)
+    at Context.<anonymous> (test/RifaChain.DateValidation.test.js:108:5)
+  
+
+  34) RifaChain Multiple Winners
+       Winner Selection and Distribution
+         Should select multiple unique winners and distribute prizes correctly:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.MultipleWinners.test.js:63:18)
+  
+
+  35) RifaChain Multiple Winners
+       Winner Selection and Distribution
+         Should ensure 2nd place winner is not 1st place winner:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.MultipleWinners.test.js:132:20)
+  
+
+  36) RifaChain Load & Gas Tests
+       Should handle 50 concurrent participants and report gas usage:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.load.test.js:43:22)
+  
+
+  37) RifaChain
+       Raffle Creation
+         Should create a public raffle with native token correctly:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:58:18)
+  
+
+  38) RifaChain
+       Raffle Creation
+         Should create a private raffle with ERC20 token correctly:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:97:18)
+  
+
+  39) RifaChain
+       Raffle Creation
+         Should allow maxParticipants = 0 with minParticipants set:
+     AssertionError: Expected transaction NOT to be reverted
+      at Context.<anonymous> (test/RifaChain.test.js:160:9)
+
+  40) RifaChain
+       Participation
+         Should allow joining a native token raffle with correct payment:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createActiveRaffleFixture (test/RifaChain.test.js:180:16)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:210:69)
+  
+
+  41) RifaChain
+       Participation
+         Should revert joining native raffle with incorrect payment:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createActiveRaffleFixture (test/RifaChain.test.js:180:16)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:231:60)
+  
+
+  42) RifaChain
+       Participation
+         Should allow joining ERC20 raffle with approval:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createActiveRaffleFixture (test/RifaChain.test.js:180:16)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:243:79)
+  
+
+  43) RifaChain
+       Participation
+         Should revert ERC20 join if ETH is sent:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createActiveRaffleFixture (test/RifaChain.test.js:180:16)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:260:47)
+  
+
+  44) RifaChain
+       Participation
+         Should allow joining a free raffle:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createActiveRaffleFixture (test/RifaChain.test.js:180:16)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:267:47)
+  
+
+  45) RifaChain
+       Participation
+         Should revert free raffle join if ETH is sent:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createActiveRaffleFixture (test/RifaChain.test.js:180:16)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:274:47)
+  
+
+  46) RifaChain
+       Participation
+         Should revert if raffle is not active (before start):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:283:18)
+  
+
+  47) RifaChain
+       Participation
+         Should revert if raffle is ended:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:298:18)
+  
+
+  48) RifaChain
+       Participation
+         Should revert if winners already selected (early draw):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:319:20)
+  
+
+  49) RifaChain
+       Participation
+         Should revert if raffle is full:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createActiveRaffleFixture (test/RifaChain.test.js:180:16)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:345:74)
+  
+
+  50) RifaChain
+       Participation
+         Should allow multiple joins from same user:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createActiveRaffleFixture (test/RifaChain.test.js:180:16)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:357:62)
+  
+
+  51) RifaChain
+       Participation
+         Multiple Entries Logic
+           Should revert if user joins twice when multiple entries disabled:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:373:24)
+  
+
+  52) RifaChain
+       Participation
+         Multiple Entries Logic
+           Should revert if user buys > 1 ticket when multiple entries disabled:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:400:24)
+  
+
+  53) RifaChain
+       Winner Selection
+         Should allow creator to request random winner and fulfill it:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createEndedRaffleFixture (test/RifaChain.test.js:429:18)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:447:68)
+  
+
+  54) RifaChain
+       Winner Selection
+         Should allow early draw if minParticipants reached:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:480:18)
+  
+
+  55) RifaChain
+       Winner Selection
+         Should revert if unauthorized user tries to request winner:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createEndedRaffleFixture (test/RifaChain.test.js:429:18)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:507:46)
+  
+
+  56) RifaChain
+       Winner Selection
+         Should revert if raffle not ended:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createEndedRaffleFixture (test/RifaChain.test.js:429:18)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:517:48)
+  
+
+  57) RifaChain
+       Winner Selection
+         Should ignore duplicate fulfillment:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createEndedRaffleFixture (test/RifaChain.test.js:429:18)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:526:70)
+  
+
+  58) RifaChain
+       Winner Selection
+         Should ignore fulfillment with invalid request ID:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createEndedRaffleFixture (test/RifaChain.test.js:429:18)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:544:51)
+  
+
+  59) RifaChain
+       Winner Selection
+         Should revert if winners already selected:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at createEndedRaffleFixture (test/RifaChain.test.js:429:18)
+    at loadFixture (node_modules/.pnpm/@nomicfoundation+hardhat-network-helpers@1.1.2_hardhat@2.27.0_ts-node@10.9.2_@types+nod_078c6de7de1b27b9d3edba333dcd6f5a/node_modules/@nomicfoundation/hardhat-network-helpers/src/loadFixture.ts:59:18)
+    at Context.<anonymous> (test/RifaChain.test.js:555:70)
+  
+
+  60) RifaChain
+       Winner Selection
+         Should revert if no participants:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:577:20)
+  
+
+  61) RifaChain
+       View Functions
+         Should return paginated participants correctly:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:596:18)
+  
+
+  62) RifaChain
+       View Functions
+         Should return correct user winnings:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:630:20)
+  
+
+  63) RifaChain
+       View Functions
+         Should select winner and distribute ERC20 prizes correctly:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:664:20)
+  
+
+  64) RifaChain
+       Funding & Claims
+         Should create a raffle with initial funding (Native):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:727:20)
+  
+
+  65) RifaChain
+       Funding & Claims
+         Should create a raffle with initial funding (ERC20):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:756:20)
+  
+
+  66) RifaChain
+       Funding & Claims
+         Should allow winner to claim prize (Native):
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at Context.<anonymous> (test/RifaChain.test.js:796:20)
+  
+
+  67) RifaChain Stress Test
+       Should measure automation gas for multiple active raffles:
+     TypeError: Cannot read properties of undefined (reading 'estimateGas')
+      at Context.<anonymous> (test/StressTest.js:151:53)
+
+  68) Winners Limit Verification
+       Should allow creating a raffle with 5 winners:
+     Error: VM Exception while processing transaction: reverted with custom error 'IncorrectPayment()'
+    at RifaChain.createRaffle (contracts/RifaChain.sol:528)
+    at EdrProviderWrapper.request (node_modules/.pnpm/hardhat@2.27.0_ts-node@10.9.2_@types+node@22.7.5_typescript@5.9.3__typescript@5.9.3/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:434:41)
+    at HardhatEthersSigner.sendTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-ethers@3.1.2_ethers@6.15.0_hardhat@2.27.0_ts-node@10.9.2_@type_78f7abcbd75cacf5cd30264aff8361ea/node_modules/@nomicfoundation/hardhat-ethers/src/signers.ts:181:18)
+    at send (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:313:20)
+    at Proxy.createRaffle (node_modules/.pnpm/ethers@6.15.0/node_modules/ethers/src.ts/contract/contract.ts:352:16)
+    at waitForPendingTransaction (node_modules/.pnpm/@nomicfoundation+hardhat-chai-matchers@2.1.0_@nomicfoundation+hardhat-ethers@3.1.2_ethe_42a9a4b3ea6925de48090c07faab8c42/node_modules/@nomicfoundation/hardhat-chai-matchers/src/internal/emit.ts:28:17)
+    at Context.<anonymous> (test/WinnersLimit.test.js:52:5)
+  
+
+
+

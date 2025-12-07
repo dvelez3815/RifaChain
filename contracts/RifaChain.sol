@@ -109,9 +109,10 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @notice Gas limit for the fulfillment callback.
     uint32 callbackGasLimit = 600000; // Increased for multiple winners
     /// @notice Number of confirmations required for VRF request.
-    uint16 requestConfirmations = 3;
-    /// @notice Number of random words requested (dynamic based on winners).
-    uint32 numWords = 1; 
+    uint16 public requestConfirmations = 3;
+    
+    /// @notice Maximum duration allowed for a raffle.
+    uint256 public maxDuration = 365 days; 
 
     /// @notice Mapping from VRF Request ID to Raffle ID.
     mapping(uint256 => uint256) public requestIdToRaffleId;
@@ -129,8 +130,13 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     uint256 public additionalWinnerFee = 0.0025 ether; 
     /// @notice Platform fee percentage in basis points (e.g., 800 = 8%).
     uint256 public platformFeeBasisPoints = 800; 
+    /// @notice Fee per additional month of duration (after first 30 days).
+    uint256 public monthlyDurationFee = 0.001 ether;
     /// @notice Address that receives platform fees.
     address public feeRecipient;
+
+    /// @notice Maximum number of winners allowed per raffle.
+    uint256 public maxWinners = 5;
 
     // --- Events ---
 
@@ -160,10 +166,14 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
         uint256 startTime,
         uint256 endTime,
         uint256 minParticipants,
+        uint256 maxParticipants,
         bool isPublic,
         bool allowMultipleEntries,
         uint256 fundingAmount,
-        uint256[] winnerPercentages
+        uint256[] winnerPercentages,
+        uint256 version,
+        string title,
+        string description
     );
 
     /**
@@ -244,10 +254,14 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     event GasLimitUpdated(uint32 newLimit);
     event CreationFeeUpdated(uint256 newBaseFee, uint256 newAdditionalFee);
     event PlatformFeeUpdated(uint256 newFeeBasisPoints);
+    event DurationFeeUpdated(uint256 newFee);
     event FeeRecipientUpdated(address newRecipient);
     event GracePeriodUpdated(uint256 newPeriod);
     event KeyHashUpdated(bytes32 keyHash);
     event SubscriptionIdUpdated(uint256 subscriptionId);
+    event MaxWinnersUpdated(uint256 newMax);
+    event RequestConfirmationsUpdated(uint16 newConfirmations);
+    event MaxDurationUpdated(uint256 newDuration);
     
     /**
      * @notice Emitted when a creator collects their ticket revenue.
@@ -357,6 +371,15 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     /**
+     * @notice Updates the monthly duration fee.
+     * @param _newFee The new fee in wei per month.
+     */
+    function setDurationFee(uint256 _newFee) external onlyOwner {
+        monthlyDurationFee = _newFee;
+        emit DurationFeeUpdated(_newFee);
+    }
+
+    /**
      * @notice Updates the address that receives platform fees.
      * @param _newRecipient The new fee recipient address.
      */
@@ -394,13 +417,56 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     /**
-     * @notice Calculates the creation fee based on the number of winners.
+     * @notice Updates the maximum number of winners allowed.
+     * @param _newMax The new maximum number of winners.
+     */
+    function setMaxWinners(uint256 _newMax) external onlyOwner {
+        require(_newMax > 0, "Must be at least 1");
+        maxWinners = _newMax;
+        emit MaxWinnersUpdated(_newMax);
+    }
+
+    /**
+     * @notice Updates the number of confirmations required for VRF requests.
+     * @param _newConfirmations The new number of confirmations.
+     */
+    function setRequestConfirmations(uint16 _newConfirmations) external onlyOwner {
+        require(_newConfirmations >= 3, "Min 3 confirmations"); // Safety check
+        requestConfirmations = _newConfirmations;
+        emit RequestConfirmationsUpdated(_newConfirmations);
+    }
+
+    /**
+     * @notice Updates the maximum duration allowed for a raffle.
+     * @param _newDuration The new maximum duration in seconds.
+     */
+    function setMaxDuration(uint256 _newDuration) external onlyOwner {
+        require(_newDuration >= 1 days, "Min 1 day");
+        maxDuration = _newDuration;
+        emit MaxDurationUpdated(_newDuration);
+    }
+
+    /**
+     * @notice Calculates the creation fee based on winners and duration.
      * @param _numWinners The number of winners configured for the raffle.
+     * @param _duration The duration of the raffle in seconds.
      * @return The total creation fee in wei.
      */
-    function getCreationFee(uint256 _numWinners) public view returns (uint256) {
-        if (_numWinners <= 1) return baseCreationFee;
-        return baseCreationFee + ((_numWinners - 1) * additionalWinnerFee);
+    function getCreationFee(uint256 _numWinners, uint256 _duration) public view returns (uint256) {
+        uint256 base = baseCreationFee;
+        if (_numWinners > 1) {
+            base += ((_numWinners - 1) * additionalWinnerFee);
+        }
+
+        if (_duration <= 30 days) {
+            return base;
+        }
+
+        uint256 extraTime = _duration - 30 days;
+        // Calculate extra months, rounding up for any fraction of a month
+        uint256 extraMonths = (extraTime + 30 days - 1) / 30 days;
+        
+        return base + (extraMonths * monthlyDurationFee);
     }
 
     // --- Core Functions ---
@@ -440,7 +506,7 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     ) external payable {
         if (_startTime < block.timestamp - 1 hours) revert InvalidTimeRange();
         if (_startTime >= _endTime) revert InvalidTimeRange();
-        if (_endTime > block.timestamp + 14 days) revert InvalidTimeRange();
+        if (_endTime > _startTime + maxDuration) revert InvalidTimeRange();
         if (_payoutAddress == address(0)) revert InvalidPayoutAddress();
         if (_maxParticipants > 0 && _minParticipants > _maxParticipants) revert InvalidParticipantLimits();
         
@@ -450,7 +516,7 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
             totalPercentage += _winnerPercentages[i];
         }
         if (totalPercentage != 100) revert InvalidWinnerPercentages();
-        if (_winnerPercentages.length > 5) revert InvalidWinnerPercentages();
+        if (_winnerPercentages.length > maxWinners) revert InvalidWinnerPercentages();
         
         if (_minParticipants < _winnerPercentages.length) revert InvalidParticipantLimits();
         if (_minParticipants < 1) revert InvalidParticipantLimits();
@@ -489,7 +555,8 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
             earningsCollected: false
         });
 
-        uint256 fee = getCreationFee(_winnerPercentages.length);
+        uint256 duration = _endTime - _startTime;
+        uint256 fee = getCreationFee(_winnerPercentages.length, duration);
         uint256 requiredValue = fee;
         if (_tokenType == TokenType.NATIVE) {
             requiredValue += _fundingAmount;
@@ -516,10 +583,14 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
             _startTime,
             _endTime,
             _minParticipants,
+            _maxParticipants,
             _isPublic,
             _allowMultipleEntries,
             _fundingAmount,
-            _winnerPercentages
+            _winnerPercentages,
+            VERSION,
+            _title,
+            _description
         );
     }
 
