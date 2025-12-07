@@ -24,7 +24,9 @@ contract MockRevertingReceiver {
         uint256 _minParticipants,
         uint256 _maxParticipants,
         uint256 _ticketPrice,
-        uint256 _fundingAmount
+        uint256 _fundingAmount,
+        uint8 _tokenType,
+        address _tokenAddress
     ) external payable {
         // Minimal params for testing
         uint256[] memory percentages = new uint256[](1);
@@ -33,7 +35,7 @@ contract MockRevertingReceiver {
         (bool success, ) = _target.call{value: msg.value}(
             abi.encodeWithSignature(
                 "createRaffle(string,string,uint256,uint256,uint256,uint256,bool,uint8,address,uint256,address,bool,uint256,uint256[])",
-                _title, "Desc", _startTime, _endTime, _minParticipants, _maxParticipants, true, 0, address(0), _ticketPrice, address(this), true, _fundingAmount, percentages
+                _title, "Desc", _startTime, _endTime, _minParticipants, _maxParticipants, true, _tokenType, _tokenAddress, _ticketPrice, address(this), true, _fundingAmount, percentages
             )
         );
         require(success, "Create failed");

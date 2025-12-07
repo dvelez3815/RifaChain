@@ -167,6 +167,8 @@ describe("RifaChain Transfer Failures", function () {
             10,
             0,
             fundingAmount,
+            0, // TokenType.NATIVE
+            ethers.ZeroAddress,
             { value: baseCreationFee + fundingAmount }
         )
     ).to.not.be.reverted;
@@ -210,5 +212,64 @@ describe("RifaChain Transfer Failures", function () {
     await expect(
         mockVRFCoordinator.fulfillRandomWords(await rifaChain.getAddress(), requestId, [0n])
     ).to.be.revertedWithCustomError(rifaChain, "TransferFailed");
+  });
+
+  it("Should revert when MockRevertingReceiver tries to withdraw earnings (as it rejects payments)", async function () {
+    const { rifaChain, mockRevertingReceiver, baseCreationFee, mockVRFCoordinator } = await loadFixture(deployFixture);
+    const now = await time.latest();
+    const ticketPrice = ethers.parseEther("0.1");
+
+    const tx = await mockRevertingReceiver.createRaffle(
+        await rifaChain.getAddress(),
+        "Mock Creator",
+        now + 50,
+        now + 500,
+        1,
+        10,
+        ticketPrice,
+        0,
+        0, // TokenType.NATIVE
+        ethers.ZeroAddress,
+        { value: baseCreationFee }
+    );
+
+    const receipt = await tx.wait();
+    const log = receipt.logs.find(l => {
+        try {
+            const parsed = rifaChain.interface.parseLog(l);
+            return parsed && parsed.name === 'RaffleCreated';
+        } catch (e) { return false; }
+    });
+    const raffleId = rifaChain.interface.parseLog(log).args[0];
+    const raffle = await rifaChain.getRaffle(raffleId);
+    // console.log("Raffle Start:", raffle.startTime, "Now:", now);
+    expect(raffle.startTime).to.equal(now + 50);
+    expect(raffle.isActive).to.be.true;
+
+    await time.increase(200);
+
+    // 2. Someone joins
+    const [owner, creator, user1] = await ethers.getSigners();
+    await rifaChain.connect(user1).joinRaffle(raffleId, 1, "0x", { value: ticketPrice });
+
+    await time.increaseTo(now + 300);
+
+    // 3. Pick Winner
+    // user1 cannot request because grace period not over. Owner can.
+    const reqTx = await rifaChain.connect(owner).requestRandomWinner(raffleId);
+    const reqReceipt = await reqTx.wait();
+    const requestId = reqReceipt.logs.find(log => log.fragment && log.fragment.name === 'RandomnessRequested').args[1];
+
+    await mockVRFCoordinator.fulfillRandomWords(await rifaChain.getAddress(), requestId, [0n]);
+
+    // 4. Mock tries to withdraw earnings
+    // This calls MockRevertingReceiver.withdrawCreatorEarnings -> RifaChain.withdrawCreatorEarnings
+    // RifaChain tries to send ETH to MockRevertingReceiver.
+    // MockRevertingReceiver.receive() reverts.
+    // RifaChain reverts with TransferFailed.
+    // MockRevertingReceiver.withdrawCreatorEarnings sees failure and reverts with "Withdraw earnings failed".
+    await expect(
+        mockRevertingReceiver.withdrawCreatorEarnings(await rifaChain.getAddress(), raffleId)
+    ).to.be.revertedWith("Withdraw earnings failed");
   });
 });
