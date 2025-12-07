@@ -109,9 +109,10 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     /// @notice Gas limit for the fulfillment callback.
     uint32 callbackGasLimit = 600000; // Increased for multiple winners
     /// @notice Number of confirmations required for VRF request.
-    uint16 requestConfirmations = 3;
-    /// @notice Number of random words requested (dynamic based on winners).
-    uint32 numWords = 1; 
+    uint16 public requestConfirmations = 3;
+    
+    /// @notice Maximum duration allowed for a raffle.
+    uint256 public maxDuration = 365 days; 
 
     /// @notice Mapping from VRF Request ID to Raffle ID.
     mapping(uint256 => uint256) public requestIdToRaffleId;
@@ -259,6 +260,8 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     event KeyHashUpdated(bytes32 keyHash);
     event SubscriptionIdUpdated(uint256 subscriptionId);
     event MaxWinnersUpdated(uint256 newMax);
+    event RequestConfirmationsUpdated(uint16 newConfirmations);
+    event MaxDurationUpdated(uint256 newDuration);
     
     /**
      * @notice Emitted when a creator collects their ticket revenue.
@@ -424,6 +427,26 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     /**
+     * @notice Updates the number of confirmations required for VRF requests.
+     * @param _newConfirmations The new number of confirmations.
+     */
+    function setRequestConfirmations(uint16 _newConfirmations) external onlyOwner {
+        require(_newConfirmations >= 3, "Min 3 confirmations"); // Safety check
+        requestConfirmations = _newConfirmations;
+        emit RequestConfirmationsUpdated(_newConfirmations);
+    }
+
+    /**
+     * @notice Updates the maximum duration allowed for a raffle.
+     * @param _newDuration The new maximum duration in seconds.
+     */
+    function setMaxDuration(uint256 _newDuration) external onlyOwner {
+        require(_newDuration >= 1 days, "Min 1 day");
+        maxDuration = _newDuration;
+        emit MaxDurationUpdated(_newDuration);
+    }
+
+    /**
      * @notice Calculates the creation fee based on winners and duration.
      * @param _numWinners The number of winners configured for the raffle.
      * @param _duration The duration of the raffle in seconds.
@@ -483,7 +506,7 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     ) external payable {
         if (_startTime < block.timestamp - 1 hours) revert InvalidTimeRange();
         if (_startTime >= _endTime) revert InvalidTimeRange();
-        if (_endTime > block.timestamp + 365 days) revert InvalidTimeRange();
+        if (_endTime > _startTime + maxDuration) revert InvalidTimeRange();
         if (_payoutAddress == address(0)) revert InvalidPayoutAddress();
         if (_maxParticipants > 0 && _minParticipants > _maxParticipants) revert InvalidParticipantLimits();
         
