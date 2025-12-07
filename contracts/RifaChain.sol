@@ -129,6 +129,8 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     uint256 public additionalWinnerFee = 0.0025 ether; 
     /// @notice Platform fee percentage in basis points (e.g., 800 = 8%).
     uint256 public platformFeeBasisPoints = 800; 
+    /// @notice Fee per additional month of duration (after first 30 days).
+    uint256 public monthlyDurationFee = 0.001 ether;
     /// @notice Address that receives platform fees.
     address public feeRecipient;
 
@@ -248,6 +250,7 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     event GasLimitUpdated(uint32 newLimit);
     event CreationFeeUpdated(uint256 newBaseFee, uint256 newAdditionalFee);
     event PlatformFeeUpdated(uint256 newFeeBasisPoints);
+    event DurationFeeUpdated(uint256 newFee);
     event FeeRecipientUpdated(address newRecipient);
     event GracePeriodUpdated(uint256 newPeriod);
     event KeyHashUpdated(bytes32 keyHash);
@@ -361,6 +364,15 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     /**
+     * @notice Updates the monthly duration fee.
+     * @param _newFee The new fee in wei per month.
+     */
+    function setDurationFee(uint256 _newFee) external onlyOwner {
+        monthlyDurationFee = _newFee;
+        emit DurationFeeUpdated(_newFee);
+    }
+
+    /**
      * @notice Updates the address that receives platform fees.
      * @param _newRecipient The new fee recipient address.
      */
@@ -398,13 +410,26 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     }
 
     /**
-     * @notice Calculates the creation fee based on the number of winners.
+     * @notice Calculates the creation fee based on winners and duration.
      * @param _numWinners The number of winners configured for the raffle.
+     * @param _duration The duration of the raffle in seconds.
      * @return The total creation fee in wei.
      */
-    function getCreationFee(uint256 _numWinners) public view returns (uint256) {
-        if (_numWinners <= 1) return baseCreationFee;
-        return baseCreationFee + ((_numWinners - 1) * additionalWinnerFee);
+    function getCreationFee(uint256 _numWinners, uint256 _duration) public view returns (uint256) {
+        uint256 base = baseCreationFee;
+        if (_numWinners > 1) {
+            base += ((_numWinners - 1) * additionalWinnerFee);
+        }
+
+        if (_duration <= 30 days) {
+            return base;
+        }
+
+        uint256 extraTime = _duration - 30 days;
+        // Calculate extra months, rounding up for any fraction of a month
+        uint256 extraMonths = (extraTime + 30 days - 1) / 30 days;
+        
+        return base + (extraMonths * monthlyDurationFee);
     }
 
     // --- Core Functions ---
@@ -444,7 +469,7 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
     ) external payable {
         if (_startTime < block.timestamp - 1 hours) revert InvalidTimeRange();
         if (_startTime >= _endTime) revert InvalidTimeRange();
-        if (_endTime > block.timestamp + 14 days) revert InvalidTimeRange();
+        if (_endTime > block.timestamp + 365 days) revert InvalidTimeRange();
         if (_payoutAddress == address(0)) revert InvalidPayoutAddress();
         if (_maxParticipants > 0 && _minParticipants > _maxParticipants) revert InvalidParticipantLimits();
         
@@ -493,7 +518,8 @@ contract RifaChain is ReentrancyGuard, VRFConsumerBaseV2Plus {
             earningsCollected: false
         });
 
-        uint256 fee = getCreationFee(_winnerPercentages.length);
+        uint256 duration = _endTime - _startTime;
+        uint256 fee = getCreationFee(_winnerPercentages.length, duration);
         uint256 requiredValue = fee;
         if (_tokenType == TokenType.NATIVE) {
             requiredValue += _fundingAmount;

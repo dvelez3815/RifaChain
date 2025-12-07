@@ -47,14 +47,30 @@ describe("RifaChain Fee Structure", function () {
     it("Should return correct fee from getCreationFee", async function () {
         const { rifaChain, baseCreationFee, additionalWinnerFee } = await loadFixture(deployRifaChainFixture);
         
-        // 1 Winner
-        expect(await rifaChain.getCreationFee(1)).to.equal(baseCreationFee);
+        // 1 Winner, Short Duration
+        expect(await rifaChain.getCreationFee(1, 0)).to.equal(baseCreationFee);
         
-        // 2 Winners
-        expect(await rifaChain.getCreationFee(2)).to.equal(baseCreationFee + additionalWinnerFee);
+        // 2 Winners, Short Duration
+        expect(await rifaChain.getCreationFee(2, 0)).to.equal(baseCreationFee + additionalWinnerFee);
         
-        // 5 Winners
-        expect(await rifaChain.getCreationFee(5)).to.equal(baseCreationFee + (additionalWinnerFee * 4n));
+        // 5 Winners, Short Duration
+        expect(await rifaChain.getCreationFee(5, 0)).to.equal(baseCreationFee + (additionalWinnerFee * 4n));
+
+        // Duration Fee Checks
+        const monthlyFee = ethers.parseEther("0.001");
+        const day = 24 * 60 * 60;
+
+        // <= 30 days: No extra fee
+        expect(await rifaChain.getCreationFee(1, 30 * day)).to.equal(baseCreationFee);
+
+        // 31 days: 1 month extra
+        expect(await rifaChain.getCreationFee(1, 31 * day)).to.equal(baseCreationFee + monthlyFee);
+
+        // 60 days: 1 month extra
+        expect(await rifaChain.getCreationFee(1, 60 * day)).to.equal(baseCreationFee + monthlyFee);
+
+        // 61 days: 2 months extra
+        expect(await rifaChain.getCreationFee(1, 61 * day)).to.equal(baseCreationFee + (monthlyFee * 2n));
     });
 
     it("Should revert if creation fee is not paid (Native)", async function () {
@@ -120,6 +136,31 @@ describe("RifaChain Fee Structure", function () {
         expect(finalFeeRecipientBalance - initialFeeRecipientBalance).to.equal(baseCreationFee);
         expect(finalContractBalance - initialContractBalance).to.equal(fundingAmount);
       });
+
+    it("Should require duration fee for long raffles", async function () {
+        const { rifaChain, creator } = await loadFixture(deployRifaChainFixture);
+        const now = await time.latest();
+        const monthlyFee = ethers.parseEther("0.001");
+        const baseFee = await rifaChain.baseCreationFee();
+        
+        // 40 days duration (1 month extra fee)
+        const startTime = now + 100;
+        const endTime = startTime + (40 * 24 * 60 * 60); 
+
+        // Try with only base fee (should fail)
+        await expect(
+            rifaChain.connect(creator).createRaffle(
+                "Long Raffle", "Desc", startTime, endTime, 1, 10, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100],
+                { value: baseFee }
+            )
+        ).to.be.revertedWithCustomError(rifaChain, "IncorrectPayment");
+
+        // Try with base + monthly fee (should succeed)
+        await rifaChain.connect(creator).createRaffle(
+            "Long Raffle", "Desc", startTime, endTime, 1, 10, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100],
+            { value: baseFee + monthlyFee }
+        );
+    });
   });
 
   describe("Platform Fee (Pot Commission)", function () {
