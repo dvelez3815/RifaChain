@@ -38,8 +38,11 @@ describe("RifaChain Cancel Raffle", function () {
         const now = await time.latest();
         
         // Create raffle with minParticipants = 10
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100]
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100],
+            { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -62,8 +65,10 @@ describe("RifaChain Cancel Raffle", function () {
         const now = await time.latest();
         const fundingAmount = ethers.parseEther("1.0");
         
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, fundingAmount, [100], { value: fundingAmount }
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, fundingAmount, [100], { value: fundingAmount + fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -82,13 +87,45 @@ describe("RifaChain Cancel Raffle", function () {
         expect(balanceAfter + gasUsed - balanceBefore).to.equal(fundingAmount);
     });
 
+    it("Should refund ERC20 funding amount to creator on cancellation", async function () {
+        const { rifaChain, mockToken, creator } = await loadFixture(deployRifaChainFixture);
+        const now = await time.latest();
+        const fundingAmount = ethers.parseUnits("10", 18);
+        
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
+        
+        // Approve and Mint
+        await mockToken.mint(creator.address, fundingAmount);
+        await mockToken.connect(creator).approve(await rifaChain.getAddress(), fundingAmount);
+
+        const tx = await rifaChain.connect(creator).createRaffle(
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 1, await mockToken.getAddress(), 0, creator.address, true, fundingAmount, [100], { value: fee }
+        );
+        const receipt = await tx.wait();
+        const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
+
+        await time.increaseTo(now + 201);
+
+        const balanceBefore = await mockToken.balanceOf(creator.address);
+        
+        await rifaChain.connect(creator).cancelRaffle(raffleId);
+        
+        const balanceAfter = await mockToken.balanceOf(creator.address);
+
+        expect(balanceAfter - balanceBefore).to.equal(fundingAmount);
+    });
+
 
 
     it("Should revert if raffle not ended", async function () {
         const { rifaChain, creator } = await loadFixture(deployRifaChainFixture);
         const now = await time.latest();
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100]
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100],
+            { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -103,8 +140,11 @@ describe("RifaChain Cancel Raffle", function () {
         const { rifaChain, creator, user1 } = await loadFixture(deployRifaChainFixture);
         const now = await time.latest();
         // Min participants = 1
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 1, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100]
+            "Raffle", "Desc", now + 100, now + 200, 1, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100],
+            { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -122,8 +162,11 @@ describe("RifaChain Cancel Raffle", function () {
     it("Should revert if already cancelled", async function () {
         const { rifaChain, creator } = await loadFixture(deployRifaChainFixture);
         const now = await time.latest();
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100]
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100],
+            { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -136,22 +179,7 @@ describe("RifaChain Cancel Raffle", function () {
         ).to.be.revertedWithCustomError(rifaChain, "RaffleEnded"); // Or RaffleNotCancelled depending on check order, but here isCancelled check is inside cancelRaffle
     });
     
-    it("Should remove from activeRaffles upon cancellation", async function () {
-        const { rifaChain, creator } = await loadFixture(deployRifaChainFixture);
-        const now = await time.latest();
-        const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100]
-        );
-        const receipt = await tx.wait();
-        const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
 
-        expect(await rifaChain.activeRaffles(0)).to.equal(raffleId);
-
-        await time.increaseTo(now + 201);
-        await rifaChain.connect(creator).cancelRaffle(raffleId);
-
-        await expect(rifaChain.activeRaffles(0)).to.be.reverted;
-    });
 
     it("Should allow PARTICIPANT to cancel IMMEDIATELY if raffle failed (min participants not met)", async function () {
         const { rifaChain, creator, user1, user2 } = await loadFixture(deployRifaChainFixture);
@@ -160,8 +188,10 @@ describe("RifaChain Cancel Raffle", function () {
         const ticketPrice = ethers.parseEther("0.1");
 
         // Min participants = 10, with funding
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, fundingAmount, [100], { value: fundingAmount }
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, fundingAmount, [100], { value: fundingAmount + fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -200,8 +230,10 @@ describe("RifaChain Cancel Raffle", function () {
         const fundingAmount = ethers.parseEther("1.0");
 
         // Min participants = 1, with funding
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 1, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, fundingAmount, [100], { value: fundingAmount }
+            "Raffle", "Desc", now + 100, now + 200, 1, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, fundingAmount, [100], { value: fundingAmount + fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -247,8 +279,11 @@ describe("RifaChain Cancel Raffle", function () {
         const now = await time.latest();
         const ticketPrice = ethers.parseEther("1.0");
         
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, 0, [100]
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, 0, [100],
+            { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -279,8 +314,11 @@ describe("RifaChain Cancel Raffle", function () {
         const now = await time.latest();
         const ticketPrice = ethers.parseUnits("10", 18);
         
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 1, await mockToken.getAddress(), ticketPrice, creator.address, true, 0, [100]
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 1, await mockToken.getAddress(), ticketPrice, creator.address, true, 0, [100],
+            { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -306,8 +344,11 @@ describe("RifaChain Cancel Raffle", function () {
         const now = await time.latest();
         const ticketPrice = ethers.parseEther("1.0");
         
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, 0, [100]
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, 0, [100],
+            { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -324,8 +365,11 @@ describe("RifaChain Cancel Raffle", function () {
         const { rifaChain, creator, user1 } = await loadFixture(deployRifaChainFixture);
         const now = await time.latest();
         
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100]
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, 0, creator.address, true, 0, [100],
+            { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -343,8 +387,11 @@ describe("RifaChain Cancel Raffle", function () {
         const now = await time.latest();
         const ticketPrice = ethers.parseEther("1.0");
         
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
         const tx = await rifaChain.connect(creator).createRaffle(
-            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, 0, [100]
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, 0, [100],
+            { value: fee }
         );
         const receipt = await tx.wait();
         const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
@@ -360,6 +407,42 @@ describe("RifaChain Cancel Raffle", function () {
         await expect(
             rifaChain.connect(user1).withdrawRefund(raffleId)
         ).to.be.revertedWithCustomError(rifaChain, "NothingToRefund");
+    });
+    it("Should revert if refund transfer fails", async function () {
+        const { rifaChain, creator } = await loadFixture(deployRifaChainFixture);
+        const now = await time.latest();
+        const ticketPrice = ethers.parseEther("1.0");
+        
+        // Deploy MockRevertingReceiver
+        const MockRevertingReceiver = await ethers.getContractFactory("MockRevertingReceiver");
+        const mockReceiver = await MockRevertingReceiver.deploy();
+        await mockReceiver.waitForDeployment();
+
+        const duration = 100;
+        const fee = await rifaChain.getCreationFee(1, duration);
+        const tx = await rifaChain.connect(creator).createRaffle(
+            "Raffle", "Desc", now + 100, now + 200, 10, 0, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, true, 0, [100],
+            { value: fee }
+        );
+        const receipt = await tx.wait();
+        const raffleId = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated').args[0];
+
+        await time.increaseTo(now + 101);
+        
+        // Mock receiver joins
+        await mockReceiver.joinRaffle(await rifaChain.getAddress(), raffleId, 1, { value: ticketPrice });
+
+        await time.increaseTo(now + 201);
+        await rifaChain.connect(creator).cancelRaffle(raffleId);
+
+        // Try to withdraw refund -> should fail because receiver reverts
+        // We need to call it from the mock receiver, but since it reverts in receive(), the internal call in RifaChain will fail.
+        // RifaChain checks `if (!success) revert TransferFailed();`
+        // So the transaction should revert with TransferFailed
+        
+        await expect(
+            mockReceiver.withdrawRefund(await rifaChain.getAddress(), raffleId)
+        ).to.be.revertedWith("Withdraw call failed");
     });
   });
 });

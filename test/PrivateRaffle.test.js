@@ -23,10 +23,13 @@ describe("RifaChain Private Raffles (Digital Signatures)", function () {
     const { time } = require("@nomicfoundation/hardhat-network-helpers");
     const now = await time.latest();
     const startTime = now + 100;
+    const duration = 3500;
+    const fee = await rifaChain.getCreationFee(1, duration);
     await rifaChain.createRaffle(
       "Private Raffle", "Desc", startTime, now + 3600, 1, 100, 
       false, // isPublic = FALSE
-      0, ethers.ZeroAddress, 0, owner.address, false, 0, [100]
+      0, ethers.ZeroAddress, 0, owner.address, false, 0, [100],
+      { value: fee }
     );
     const filter = rifaChain.filters.RaffleCreated();
     const events = await rifaChain.queryFilter(filter);

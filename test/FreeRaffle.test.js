@@ -26,6 +26,8 @@ describe("RifaChain Free Raffles", function () {
   it("Should allow creating a free raffle (price 0)", async function () {
     const { time } = require("@nomicfoundation/hardhat-network-helpers");
     const now = await time.latest();
+    const duration = 3500;
+    const fee = await rifaChain.getCreationFee(1, duration);
     await rifaChain.createRaffle(
       "Free Raffle",
       "Description",
@@ -41,7 +43,8 @@ describe("RifaChain Free Raffles", function () {
       owner.address,
       false, // allowMultipleEntries (should be false for free, but contract allows true currently)
       0, // fundingAmount
-      [100] // winner percentages
+      [100], // winner percentages
+      { value: fee }
     );
 
     const raffle = await rifaChain.raffles(1); // ID might be random, need to fetch differently or check event
@@ -60,10 +63,13 @@ describe("RifaChain Free Raffles", function () {
     const { time } = require("@nomicfoundation/hardhat-network-helpers");
     const now = await time.latest();
     const startTime = now + 100;
+    const duration = 3500;
+    const fee = await rifaChain.getCreationFee(1, duration);
     await rifaChain.createRaffle(
       "Free Raffle", "Desc", startTime, now + 3600, 1, 100, true, 0, ethers.ZeroAddress, 
       0, // Price 0
-      owner.address, false, 0, [100]
+      owner.address, false, 0, [100],
+      { value: fee }
     );
     const filter = rifaChain.filters.RaffleCreated();
     const events = await rifaChain.queryFilter(filter);
@@ -79,10 +85,13 @@ describe("RifaChain Free Raffles", function () {
     const { time } = require("@nomicfoundation/hardhat-network-helpers");
     const now = await time.latest();
     const startTime = now + 100;
+    const duration = 3500;
+    const fee = await rifaChain.getCreationFee(1, duration);
     await rifaChain.createRaffle(
       "Free Raffle", "Desc", startTime, now + 3600, 1, 100, true, 0, ethers.ZeroAddress, 
       0, // Price 0
-      owner.address, false, 0, [100]
+      owner.address, false, 0, [100],
+      { value: fee }
     );
     const filter = rifaChain.filters.RaffleCreated();
     const events = await rifaChain.queryFilter(filter);
@@ -102,13 +111,16 @@ describe("RifaChain Free Raffles", function () {
     const { time } = require("@nomicfoundation/hardhat-network-helpers");
     const now = await time.latest();
     const startTime = now + 100;
+    const duration = 3500;
+    const fee = await rifaChain.getCreationFee(1, duration);
     await rifaChain.createRaffle(
       "Free Raffle", "Desc", startTime, now + 3600, 1, 100, true, 0, ethers.ZeroAddress, 
       0, // Price 0
       owner.address, 
       true, // allowMultipleEntries SET TO TRUE to test enforcement override
       0, // fundingAmount
-      [100]
+      [100],
+      { value: fee }
     );
     const filter = rifaChain.filters.RaffleCreated();
     const events = await rifaChain.queryFilter(filter);

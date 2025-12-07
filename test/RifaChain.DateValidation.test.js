@@ -75,10 +75,10 @@ describe("RifaChain Date Validation", function () {
     ).to.be.revertedWithCustomError(rifaChain, "InvalidTimeRange");
   });
 
-  it("Should revert if duration is > 14 days", async function () {
+  it("Should revert if duration is > 365 days", async function () {
     const now = await time.latest();
     const startTime = now + 60; // 1 min from now
-    const endTime = now + (15 * 24 * 3600); // 15 days from now
+    const endTime = now + (366 * 24 * 3600); // 366 days from now
 
     await expect(
       rifaChain.createRaffle(
@@ -104,6 +104,8 @@ describe("RifaChain Date Validation", function () {
     const now = await time.latest();
     const startTime = now + 60; // 1 min from now
     const endTime = now + (13 * 24 * 3600); // 13 days from now
+    const duration = endTime - startTime;
+    const fee = await rifaChain.getCreationFee(1, duration);
 
     await expect(
       rifaChain.createRaffle(
@@ -120,7 +122,8 @@ describe("RifaChain Date Validation", function () {
         owner.address,
         false,
         0, // fundingAmount
-        [100]
+        [100],
+        { value: fee }
       )
     ).to.emit(rifaChain, "RaffleCreated");
   });

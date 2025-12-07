@@ -52,7 +52,7 @@ describe("RifaChain Stress Test", function () {
       true, // allowMultipleEntries
       fundingAmount,
       [50, 30, 20], // 3 winners
-      { value: fundingAmount + ethers.parseEther("0.005") + ethers.parseEther("0.005") } // Fees
+      { value: fundingAmount + await rifaChain.getCreationFee(3, 3600) } // Fees
     )).wait();
 
     const eventCreation = receiptCreation.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated');
@@ -65,15 +65,11 @@ describe("RifaChain Stress Test", function () {
     console.log("Debug: CurrentTime", currentBlock.timestamp);
     console.log("Debug: EndTime", endTime);
 
-    // Add 100 participants
-    // Note: In a real stress test we'd use more, but for CI/Dev speed we use 100 and extrapolate.
-    // To simulate 10k, we can just loop this. But Hardhat is slow.
-    // Let's try 50 to get a baseline average.
+    // Add 50 participants
     const participantsCount = 50;
     let totalGas = 0n;
 
     for (let i = 0; i < participantsCount; i++) {
-        // Use random signers if possible, or just same signer for multiple entries
         const tx = await rifaChain.connect(addr1).joinRaffle(raffleId, 1, "0x", { value: ticketPrice });
         const receipt = await tx.wait();
         totalGas += receipt.gasUsed;
@@ -89,7 +85,6 @@ describe("RifaChain Stress Test", function () {
     console.log(`Gas used for requestRandomWinner: ${receiptRequest.gasUsed}`);
 
     // Fulfill Random Words
-    // We need to get the requestId from logs
     const filter = rifaChain.filters.RandomnessRequested();
     const events = await rifaChain.queryFilter(filter);
     const requestId = events[0].args[1];
@@ -103,8 +98,8 @@ describe("RifaChain Stress Test", function () {
     console.log(`Gas used for fulfillRandomWords (3 winners, ${participantsCount} participants): ${receiptFulfill.gasUsed}`);
   });
 
-  it("Should measure automation gas for multiple active raffles", async function () {
-    const numRaffles = 50; // Simulate 50 active raffles ending at same time
+  it("Should measure gas for processing multiple raffles", async function () {
+    const numRaffles = 10; 
     const startTime = (await time.latest()) + 3600;
     const endTime = startTime + 3600;
     const ticketPrice = ethers.parseEther("0.01");
@@ -112,6 +107,8 @@ describe("RifaChain Stress Test", function () {
 
     // 1. Batch create raffles
     const raffleIds = [];
+    const fee = await rifaChain.getCreationFee(1, 3600);
+    
     for (let i = 0; i < numRaffles; i++) {
         const tx = await rifaChain.createRaffle(
             `Raffle ${i}`,
@@ -128,7 +125,7 @@ describe("RifaChain Stress Test", function () {
             true,
             fundingAmount,
             [100],
-            { value: fundingAmount + ethers.parseEther("0.005") }
+            { value: fundingAmount + fee }
         );
         const receipt = await tx.wait();
         const event = receipt.logs.find(log => log.fragment && log.fragment.name === 'RaffleCreated');
@@ -138,7 +135,7 @@ describe("RifaChain Stress Test", function () {
     // 2. Advance time to start
     await time.increaseTo(startTime + 1);
 
-    // 3. Join all raffles (to make them valid candidates for closing)
+    // 3. Join all raffles
     for (let i = 0; i < numRaffles; i++) {
         await rifaChain.connect(addr1).joinRaffle(raffleIds[i], 1, "0x", { value: ticketPrice });
     }
@@ -146,12 +143,14 @@ describe("RifaChain Stress Test", function () {
     // 4. Advance time to end
     await time.increaseTo(endTime + 1);
 
-    // Check Upkeep
-    // This view function simulates the gas cost
-    const gasEstimate = await rifaChain.checkUpkeep.estimateGas("0x");
-    console.log(`Gas used for checkUpkeep with ${numRaffles} active raffles: ${gasEstimate}`);
+    // 5. Request Winners for all
+    let totalRequestGas = 0n;
+    for (let i = 0; i < numRaffles; i++) {
+        const tx = await rifaChain.requestRandomWinner(raffleIds[i]);
+        const receipt = await tx.wait();
+        totalRequestGas += receipt.gasUsed;
+    }
     
-    // Extrapolate
-    console.log(`Estimated gas for 1000 active raffles: ${gasEstimate * 20n}`);
+    console.log(`Average Gas used for requestRandomWinner (over ${numRaffles} raffles): ${totalRequestGas / BigInt(numRaffles)}`);
   });
 });

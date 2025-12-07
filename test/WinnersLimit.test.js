@@ -36,7 +36,8 @@ describe("Winners Limit Verification", function () {
       rifaChain.connect(creator).createRaffle(
         "Limit Test", "Desc", now + 100, now + 3600, 10, 100, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, false,
         0, // fundingAmount
-        winnerPercentages
+        winnerPercentages,
+        { value: await rifaChain.getCreationFee(6, 3500) }
       )
     ).to.be.revertedWithCustomError(rifaChain, "InvalidWinnerPercentages");
   });
@@ -53,7 +54,8 @@ describe("Winners Limit Verification", function () {
       rifaChain.connect(creator).createRaffle(
         "Limit Test 5", "Desc", now + 100, now + 3600, 10, 100, true, 0, ethers.ZeroAddress, ticketPrice, creator.address, false,
         0, // fundingAmount
-        winnerPercentages
+        winnerPercentages,
+        { value: await rifaChain.getCreationFee(5, 3500) }
       )
     ).to.emit(rifaChain, "RaffleCreated");
   });
